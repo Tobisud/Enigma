@@ -1,0 +1,17 @@
+pr Enigma: enter any number to start - 0 for exit.;
+do ask (x),
+pr Enter the secrect code:,
+ask (code), 
+set (code), 
+pr input file name:, 
+ask (file), 
+open (file), 
+pr choose 1: encode and other:decode, 
+ask (choice), 
+if compare (choice) ==1 | encode cae else decode cae, 
+pr enter export file name:,
+ask (name),
+export (name),
+pr Enigma: enter any number to start - 0 for exit.,
+ask (x),
+while compare (x)>0;
