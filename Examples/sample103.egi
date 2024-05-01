@@ -1,0 +1,2 @@
+define msg (x) set (x), open (sample.txt), encode cae, pr;
+msg(today);

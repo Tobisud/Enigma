@@ -19,17 +19,7 @@ def Read_Token(tokens):
     
 ###Environment:
 def Std_Environment():
-    #Enviroment with standard procedures:
-    env=Env()
-    # env.update({
-    #     'len':  len, 
-    #     #'list':    lambda *x: list(x), 
-    #     #'isList':   lambda x: isinstance(x,list), 
-    #     '?Null':   lambda x: x == [], 
-    #     'isValid': lambda x: isinstance(x, Id),
-    #     'input' : lambda prompt: input(prompt),
-    #     '?='   :opLogic.eq,
-    # })    
+    env=Env()   
     return env
     
 class Env(dict):
@@ -64,14 +54,15 @@ class Procedure(object):
         
     def __call__(self, *args): 
         # Create a new environment for the procedure call, inheriting from the procedure's environment
-        procedure_env = Env(self.parms, args, self.env)
-        
+        global_env = Env(self.parms, args, self.env)
         # Evaluate the body of the procedure in the new environment
-        return eval(self.body, procedure_env)
+        for stmt in ' '.join(self.body).split(','):
+            eval(parse(stmt), global_env)
 ################ eval
+env=None
 curCode=[0]
 curState=[]
-def eval(x, env=global_env):
+def eval(x,env=global_env):
     global curCode
     global curState
     #Evaluate an expression in an environment.
@@ -79,8 +70,8 @@ def eval(x, env=global_env):
         found= env.find(x)
         if found is not None:
             return found[x]
-    elif not isinstance(x, Li):  # constant literal
-        return str(x) 
+        else:
+            return str(x) 
     
     elif x[0]=="if":
         ifStmt=str(' '.join(x))
@@ -88,8 +79,8 @@ def eval(x, env=global_env):
             stmts1, stmts2 =ifStmt.split("else",1)
         else: 
             stmts1=x
-        condition, expr=''.join(stmts1).split('|')
-        condition=condition.replace("if",'')
+        condition, expr=''.join(stmts1).split('|',1)
+        condition=condition.replace("if",'',1)
         if eval(parse(condition))==True:
                 eval(parse(expr))
         else:
@@ -104,10 +95,20 @@ def eval(x, env=global_env):
         #print (stmt)
         for element in stmt:
                 #print(element)
-                eval(parse((element)))
+                eval(parse(element))
         while eval(parse(condition))==True:
             for element in stmt:
                 eval(parse((element)))
+    
+    elif x[0] == "define":
+        var=x[1]
+        if x[2]=='(' and x[4]==')':
+            parms=x[3]
+            body=x[5:]
+        else: 
+            parms=[]
+            body=x[4:]
+        env[var]=Procedure(parms,body,env)
 
     elif "then" in x:
         arg1, arg2 =str(' '.join(x)).split("then",1)
@@ -121,8 +122,7 @@ def eval(x, env=global_env):
     elif x[0] == "set":
         curCode=[]
         if x[1]=='(' and x[3]==')':
-            code=''.join(str(eval(str(x[2]))))
-            curCode=logic.Gen_Code(code)
+            curCode=logic.Gen_Code(env[x[2]])
         else:
             code = ''.join(x[1:])
             curCode=logic.Gen_Code(code)
@@ -130,10 +130,9 @@ def eval(x, env=global_env):
         curState=curCode.copy()
 
     elif x[0]=="save":
-        if len(x)==4:
-            msg=curState.copy()
-        else:
-            msg=' '.join(x[4:])
+        msg=' '.join(x[4:])
+        if not msg:
+            msg=curState
         if x[1]=='(' and x[3]==')':
             env[str(x[2])]=msg
         else:
@@ -193,16 +192,17 @@ def eval(x, env=global_env):
         if len(x)<2:
             logic.Print_Msg(curState)
         elif x[1]=='(' and x[3]==')':
+            print (x[2], env)
             try:
+                print(env[x[2]])
+            except:
                 if x[2]=="?state":
                     logic.Print_Msg(curCode)
                     logic.Print_Msg(curState)
                 elif x[2]=="?rule":
                     print(logic.tempRules)
                 else:
-                    print(eval(x[2]))
-            except:
-                raise SyntaxError ("variable not found")
+                    raise SyntaxError ("variable not found")
         else:
             msg=' '.join(x[1:])
             print (msg)
@@ -262,27 +262,26 @@ def eval(x, env=global_env):
             for stmt in stmts:
                 eval(parse(stmt))
 
-    elif x[0] == "define":
-        var=x[1]
-        parms=[]
-        if x[2]=='(' and x[4]==')':
-            parms=x[3]
-        body=x[5:]
-        print (var, parms, body)
-        parms="123"
-        eval(body)
     elif x[0]=="compare":
         if x[1]=='(' and x[3]==')':
             try:
-                var1=eval(str(x[2]))
+                var1=eval(str(x[2]),env)
             except:
                 var1=x[2]
         exp=x[4:]
         condition=var1+"".join(exp)
         return logic.compare(condition)
-        
-    else:
-        # return proc(*args)
-        print("No instruction found")
+
+    else:                          # (proc arg...)
+        proc = env[x[0]]
+        if x[1]=='(' and x[3]==')':
+            try:
+                var=eval(str(x[2]))
+            except:
+                var=x[2]
+        return proc(var)
+    # else:
+    #     # return proc(*args)
+    #     print("No instruction found")
 
 repl()
