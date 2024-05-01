@@ -52,13 +52,16 @@ Keyword:
 18. “compare” use for compare variable
 19. “?state” check the curCode and curState
 20. “?rule” check the current rule
+Update:
+21. define function: declare a function
 
 #### Declare, refer variables & special rules:
 All variables should be put in ( ) otherwise it will read as string.
 Example: pr hello output: hello
 save (hello) abc; pr (hello); output: abc
 All statements must end with ‘;’ except while loop.
-Statements inside loop end with ‘,’
+Statements inside loop and define statments end with ‘,’
+
 
 #### Examples:
 https://sites.google.com/view/enigmalang/examples 
